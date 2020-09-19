@@ -1,26 +1,98 @@
 // Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
 // See LICENSE.txt for license information.
 
-import React from 'react';
-import PropTypes from 'prop-types';
+import * as React from 'react';
+
+import * as CSS from 'csstype';
 
 import {Badge, Tooltip, OverlayTrigger} from 'react-bootstrap';
+import {Theme} from 'mattermost-redux/types/preferences';
 import {makeStyleFromTheme, changeOpacity} from 'mattermost-redux/utils/theme_utils';
 
-import {formatTimeSince} from 'utils/date_utils';
+import {formatTimeSince} from '../../utils/date_utils';
 
-import CrossIcon from 'images/icons/cross.jsx';
-import DotIcon from 'images/icons/dot.jsx';
-import TickIcon from 'images/icons/tick.jsx';
-import SignIcon from 'images/icons/sign.jsx';
-import ChangesRequestedIcon from 'images/icons/changes_requested.jsx';
+import CrossIcon from '../../images/icons/cross';
+import DotIcon from '../../images/icons/dot';
+import TickIcon from '../../images/icons/tick.jsx';
+import SignIcon from '../../images/icons/sign.jsx';
+import ChangesRequestedIcon from '../../images/icons/changes_requested.jsx';
 import {getLabelFontColor} from '../../utils/styles';
 
-function GithubItems(props) {
+const notificationReasons = {
+    assign:	'You were assigned to the issue',
+    author:	'You created the thread.',
+    comment:	'You commented on the thread.',
+    invitation:	'You accepted an invitation to contribute to the repository.',
+    manual:	'You subscribed to the thread (via an issue or pull request).',
+    mention:	'You were specifically @mentioned in the content.',
+    review_requested:	'You were requested to review a pull request.',
+    security_alert: 'GitHub discovered a security vulnerability in your repository.',
+    state_change: 'You changed the thread state.',
+    subscribed:	'You are watching the repository.',
+    team_mention:	'You were on a team that was mentioned.',
+};
+
+interface Label {
+    id: number;
+    name: string;
+    color: CSS.Properties;
+}
+
+interface User {
+    login: string;
+}
+
+interface Item {
+    url: string;
+    number: number;
+
+    id: number;
+    title: string;
+    created_at: string;
+    html_url: string;
+    repository_url?: string;
+    user: User;
+    owner?: User;
+    milestone?: {
+        title: string;
+    }
+    repository?: {
+        full_name: string;
+    }
+    labels?: Label[];
+
+    // PRs
+    status?: string;
+    mergeable?: boolean;
+    requestedReviewers?: string[];
+    reviews?: {
+        state: string;
+        user: User;
+    }[];
+
+    // Notifications
+    subject?: {
+        title: string;
+    }
+    reason?: keyof typeof notificationReasons;
+}
+
+interface GithubItemsProps {
+    items: Item[];
+    theme: Theme;
+}
+
+function GithubItems(props: GithubItemsProps) {
     const style = getStyle(props.theme);
 
+    //console.log('props.items:' + props.items);
     return props.items.length > 0 ? props.items.map((item) => {
-        const repoName = item.repository_url ? item.repository_url.replace(/.+\/repos\//, '') : item.repository.full_name;
+        let repoName = '';
+        if (item.repository_url) {
+            repoName = item.repository_url.replace(/.+\/repos\//, '');
+        } else if (item.repository?.full_name) {
+            repoName = item.repository?.full_name;
+        }
 
         let userName = null;
 
@@ -30,9 +102,7 @@ function GithubItems(props) {
             userName = item.owner.login;
         }
 
-        let title = item.title ? item.title : item.subject.title;
         let number = null;
-
         if (item.number) {
             number = (
                 <strong>
@@ -40,6 +110,14 @@ function GithubItems(props) {
                 </strong>);
         }
 
+        let titelText = '';
+        if (item.title) {
+            titelText = item.title;
+        } else if (item.subject?.title) {
+            titelText = item.subject.title;
+        }
+
+        let title:JSX.Element | null = null;
         if (item.html_url) {
             title = (
                 <a
@@ -48,7 +126,7 @@ function GithubItems(props) {
                     rel='noopener noreferrer'
                     style={style.itemTitle}
                 >
-                    {item.title ? item.title : item.subject.title}
+                    {titelText}
                 </a>);
             if (item.number) {
                 number = (
@@ -62,9 +140,11 @@ function GithubItems(props) {
                         </a>
                     </strong>);
             }
+        } else {
+            title = <>{titelText}</>;
         }
 
-        let milestone = '';
+        let milestone:JSX.Element | null = null;
         if (item.milestone) {
             milestone = (
                 <span>
@@ -81,15 +161,10 @@ function GithubItems(props) {
                 </span>);
         }
 
-        let reviews = '';
-
-        if (item.reviews) {
-            reviews = getReviewText(item, style, (item.created_at || userName || milestone));
-        }
-
-        let status = '';
+        const reviews = getReviewText(item, style, (item.created_at != null || userName != null || milestone != null));
 
         // Status images pasted directly from GitHub. Change to our own version when styles are decided.
+        let status:JSX.Element | null = null;
         if (item.status) {
             switch (item.status) {
             case 'success':
@@ -103,7 +178,7 @@ function GithubItems(props) {
             }
         }
 
-        let hasConflict = '';
+        let hasConflict:JSX.Element | null = null;
         if (item.mergeable != null && !item.mergeable) {
             hasConflict = (
                 <OverlayTrigger
@@ -123,6 +198,11 @@ function GithubItems(props) {
             );
         }
 
+        let labels:JSX.Element[] | null = null;
+        if (item.labels) {
+            labels = getGithubLabels(item.labels);
+        }
+
         return (
             <div
                 key={item.id}
@@ -136,7 +216,7 @@ function GithubItems(props) {
                 <div>
                     {number} <span className='light'>{'(' + repoName + ')'}</span>
                 </div>
-                <GithubLabels labels={item.labels}/>
+                {labels}
                 <div
                     className='light'
                     style={style.subtitle}
@@ -155,11 +235,6 @@ function GithubItems(props) {
         );
     }) : <div style={style.container}>{'You have no active items'}</div>;
 }
-
-GithubItems.propTypes = {
-    items: PropTypes.array.isRequired,
-    theme: PropTypes.object.isRequired,
-};
 
 const getStyle = makeStyleFromTheme((theme) => {
     return {
@@ -213,29 +288,33 @@ const getStyle = makeStyleFromTheme((theme) => {
     };
 });
 
-function GithubLabels(props) {
-    return props.labels ? props.labels.map((label) => {
+function getGithubLabels(labels:Label[]) {
+    return labels.map((label) => {
         return (
             <Badge
                 key={label.id}
-                style={{...itemStyle.label, ...{backgroundColor: `#${label.color}`, color: getLabelFontColor(label.color)}}}
+                style={{...itemStyle, ...{backgroundColor: `#${label.color}`, color: getLabelFontColor(label.color)}}}
             >{label.name}</Badge>
         );
-    }) : null;
+    });
 }
 
-function getReviewText(item, style, secondLine) {
-    let reviews = '';
-    let changes = '';
+function getReviewText(item:Item, style:any, secondLine:boolean) {
+    if (!item.reviews || !item.requestedReviewers) {
+        return null;
+    }
 
-    const finishedReviewers = [];
+    let reviews:JSX.Element | null = null;
+    let changes:JSX.Element | null = null;
 
-    const reverse = (accum, cur) => {
+    const finishedReviewers:string[] = [];
+
+    const reverse = (accum:any, cur:any) => {
         accum.unshift(cur);
         return accum;
     };
 
-    const lastReviews = item.reviews.reduce(reverse, []).filter((v) => {
+    const lastReviews = item.reviews.reduce(reverse, []).filter((v:any) => {
         if (v.user.login === item.user.login) {
             return false;
         }
@@ -256,14 +335,14 @@ function getReviewText(item, style, secondLine) {
         return true;
     });
 
-    const approved = lastReviews.reduce((accum, cur) => {
+    const approved = lastReviews.reduce((accum:any, cur:any) => {
         if (cur.state === 'APPROVED') {
             return accum + 1;
         }
         return accum;
     }, 0);
 
-    const changesRequested = lastReviews.reduce((accum, cur) => {
+    const changesRequested = lastReviews.reduce((accum:any, cur:any) => {
         if (cur.state === 'CHANGES_REQUESTED') {
             return accum + 1;
         }
@@ -301,32 +380,12 @@ function getReviewText(item, style, secondLine) {
         </div>);
 }
 
-GithubLabels.propTypes = {
-    labels: PropTypes.array,
-};
-
-const itemStyle = {
-    label: {
-        margin: '4px 5px 0 0',
-        padding: '3px 8px',
-        display: 'inline-flex',
-        borderRadius: '3px',
-        position: 'relative',
-    },
-};
-
-const notificationReasons = {
-    assign:	'You were assigned to the issue',
-    author:	'You created the thread.',
-    comment:	'You commented on the thread.',
-    invitation:	'You accepted an invitation to contribute to the repository.',
-    manual:	'You subscribed to the thread (via an issue or pull request).',
-    mention:	'You were specifically @mentioned in the content.',
-    review_requested:	'You were requested to review a pull request.',
-    security_alert: 'GitHub discovered a security vulnerability in your repository.',
-    state_change: 'You changed the thread state.',
-    subscribed:	'You are watching the repository.',
-    team_mention:	'You were on a team that was mentioned.',
+const itemStyle:CSS.Properties = {
+    margin: '4px 5px 0 0',
+    padding: '3px 8px',
+    display: 'inline-flex',
+    borderRadius: '3px',
+    position: 'relative',
 };
 
 export default GithubItems;
