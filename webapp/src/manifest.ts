@@ -2,8 +2,8 @@
 
 const manifest = JSON.parse(`
 {
-    "id": "github2",
-    "name": "GitHub2",
+    "id": "github",
+    "name": "GitHub",
     "description": "GitHub plugin for Mattermost.",
     "homepage_url": "https://github.com/mattermost/mattermost-plugin-github",
     "support_url": "https://github.com/mattermost/mattermost-plugin-github/issues",
@@ -115,9 +115,9 @@ const manifest = JSON.parse(`
         ]
     },
     "props": {
-        "BotDisplayName": "GitHub Enterprise 2",
-        "BotUsername": "github2",
-        "SlashCommandTrigger": "github2"
+        "BotDisplayName": "GitHub",
+        "BotUsername": "github",
+        "SlashCommandTrigger": "github"
     }
 }
 `);
