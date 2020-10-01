@@ -1,6 +1,6 @@
 {
-    "id": "github",
-    "name": "GitHub",
+    "id": "github2",
+    "name": "GitHub2",
     "description": "GitHub plugin for Mattermost.",
     "homepage_url": "https://github.com/mattermost/mattermost-plugin-github",
     "support_url": "https://github.com/mattermost/mattermost-plugin-github/issues",
@@ -8,6 +8,11 @@
     "icon_path": "assets/icon.svg",
     "version": "2.0.0-rc1",
     "min_server_version": "5.25.0",
+    "props": {
+        "BotUsername": "github2",
+        "BotDisplayName": "GitHub Enterprise 2",
+        "SlashCommandTrigger": "github2"
+    },
     "server": {
       "executables": {
           "linux-amd64": "server/dist/plugin-linux-amd64",

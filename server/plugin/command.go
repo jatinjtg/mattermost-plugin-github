@@ -74,7 +74,7 @@ func (p *Plugin) getCommand(config *Configuration) (*model.Command, error) {
 	}
 
 	return &model.Command{
-		Trigger:              "github",
+		Trigger:              Manifest.Props["SlashCommandTrigger"].(string),
 		AutoComplete:         true,
 		AutoCompleteDesc:     "Available commands: connect, disconnect, todo, me, settings, subscribe, unsubscribe, mute, help",
 		AutoCompleteHint:     "[command]",
@@ -436,7 +436,7 @@ type CommandHandleFunc func(c *plugin.Context, args *model.CommandArgs, paramete
 func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*model.CommandResponse, *model.AppError) {
 	command, action, parameters := parseCommand(args.Command)
 
-	if command != "/github" {
+	if command != "/"+Manifest.Props["SlashCommandTrigger"].(string) {
 		return &model.CommandResponse{}, nil
 	}
 
@@ -466,7 +466,7 @@ func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*mo
 			qparams = "?private=true"
 		}
 
-		msg := fmt.Sprintf("[Click here to link your GitHub account.](%s/plugins/github/oauth/connect%s)", *siteURL, qparams)
+		msg := fmt.Sprintf("[Click here to link your GitHub account.](%s/plugins/%s/oauth/connect%s)", *siteURL, Manifest.Id, qparams)
 		p.postCommandResponse(args, msg)
 		return &model.CommandResponse{}, nil
 	}
@@ -492,7 +492,7 @@ func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*mo
 }
 
 func getAutocompleteData(config *Configuration) *model.AutocompleteData {
-	github := model.NewAutocompleteData("github", "[command]", "Available commands: connect, disconnect, todo, subscribe, unsubscribe, me, settings")
+	github := model.NewAutocompleteData(Manifest.Props["SlashCommandTrigger"].(string), "[command]", "Available commands: connect, disconnect, todo, subscribe, unsubscribe, me, settings")
 
 	connect := model.NewAutocompleteData("connect", "", "Connect your Mattermost account to your GitHub account")
 	private := model.NewAutocompleteData("private", "(optional)", "If used, read access to your private repositories will be requested")

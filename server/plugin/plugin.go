@@ -128,8 +128,8 @@ func (p *Plugin) OnActivate() error {
 	p.initializeAPI()
 
 	botID, err := p.Helpers.EnsureBot(&model.Bot{
-		Username:    "github",
-		DisplayName: "GitHub",
+		Username:    Manifest.Props["BotUsername"].(string),
+		DisplayName: Manifest.Props["BotDisplayName"].(string),
 		Description: "Created by the GitHub plugin.",
 	})
 	if err != nil {
