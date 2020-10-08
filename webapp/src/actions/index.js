@@ -6,6 +6,17 @@ import ActionTypes from '../action_types';
 
 import {id as pluginId} from '../manifest';
 
+export function getSettings() {
+    let data;
+    try {
+        data = Client.getSettings();
+    } catch (error) {
+        return {error};
+    }
+
+    return {data};
+}
+
 export function getConnected(reminder = false) {
     return async (dispatch) => {
         let data;
