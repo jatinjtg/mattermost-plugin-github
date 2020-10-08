@@ -108,7 +108,7 @@ func (p *Plugin) initializeAPI() {
 	oauthRouter.HandleFunc("/connect", p.extractUserMiddleWare(p.connectUserToGitHub, ResponseTypePlain)).Methods(http.MethodGet)
 	oauthRouter.HandleFunc("/complete", p.extractUserMiddleWare(p.completeConnectUserToGitHub, ResponseTypePlain)).Methods(http.MethodGet)
 
-	apiRouter.HandleFunc("/settingsinfo", p.getSettingsInfo).Methods(http.MethodPost)
+	apiRouter.HandleFunc("/settingsinfo", p.getSettingsInfo).Methods(http.MethodGet)
 	apiRouter.HandleFunc("/connected", p.getConnected).Methods(http.MethodGet)
 	apiRouter.HandleFunc("/todo", p.extractUserMiddleWare(p.postToDo, ResponseTypeJSON)).Methods(http.MethodPost)
 	apiRouter.HandleFunc("/reviews", p.extractUserMiddleWare(p.getReviews, ResponseTypePlain)).Methods(http.MethodGet)

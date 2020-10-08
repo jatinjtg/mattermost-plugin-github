@@ -23,7 +23,7 @@
         "settings": [
             {
                 "key": "EnableUI",
-                "display_name": "",
+                "display_name": "Enable UI",
                 "type": "bool",
                 "help_text": "",
                 "default": true
